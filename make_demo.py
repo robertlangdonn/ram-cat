@@ -154,7 +154,7 @@ SEQUENCE = [
 if __name__ == "__main__":
     out_dir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "ram-cat-demo.gif")
+    out_path = os.path.join(out_dir, "demo.gif")
 
     print(f"Building {len(SEQUENCE)} frames with AppKit emoji rendering...")
     frames, delays = [], []

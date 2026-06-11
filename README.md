@@ -4,7 +4,7 @@
 
 A macOS menubar companion for Apple Silicon that reacts to RAM pressure in real time — built for people running LLMs locally.
 
-![RAM Cat demo](demo/ram-cat-demo.gif)
+![RAM Cat demo](demo/demo.gif)
 
 ---
 
