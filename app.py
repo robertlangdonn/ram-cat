@@ -185,10 +185,11 @@ class RamCatApp(rumps.App):
         self._history.append(free_pct)
 
         self._cur_emoji   = emoji
+        self._cur_pct     = free_pct
         self._cur_free_gb = mp_free_gb
         self._cur_loading = False
 
-        self.title = f"RAM {emoji} {mp_free_gb:.1f}G free"
+        self.title = f"RAM {emoji} {mp_free_gb:.1f}G · {free_pct}% free"
 
         wired = _wired_gb()
         self._spark_item = _label(f"Trend:   {_sparkline(self._history)}")
@@ -232,6 +233,7 @@ class RamCatApp(rumps.App):
             self._flash_count = _FLASH_TICKS
 
         self._cur_emoji   = emoji
+        self._cur_pct     = free_pct
         self._cur_free_gb = mp_free_gb
         self._cur_loading = _climbing(self._history)
 
@@ -264,17 +266,18 @@ class RamCatApp(rumps.App):
         """Fast tick — handles title bar flash and loading spinner."""
         emoji  = self._cur_emoji
         free_g = self._cur_free_gb
+        pct    = self._cur_pct
 
         if self._flash_count > 0:
             show = self._flash_count % 2 == 0
-            self.title = f"RAM {emoji} {free_g:.1f}G free" if show else f"RAM     {free_g:.1f}G free"
+            self.title = f"RAM {emoji} {free_g:.1f}G · {pct}% free" if show else f"RAM     {free_g:.1f}G · {pct}% free"
             self._flash_count -= 1
         elif self._cur_loading:
             frame = _SPINNER[self._spinner_idx % len(_SPINNER)]
-            self.title = f"RAM {emoji}{frame} {free_g:.1f}G free"
+            self.title = f"RAM {emoji}{frame} {free_g:.1f}G · {pct}% free"
             self._spinner_idx += 1
         else:
-            self.title = f"RAM {emoji} {free_g:.1f}G free"
+            self.title = f"RAM {emoji} {free_g:.1f}G · {pct}% free"
 
     def _quit(self, _):
         rumps.quit_application()

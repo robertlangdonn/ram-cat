@@ -99,7 +99,7 @@ def render(mood, pct, spinner="", flash_off=False):
         prefix   = "RAM "
         content  = f"{emoji}{spinner}"
         free_gb  = pct / 100.0 * 16          # matches app title on a 16 GB Mac
-        suffix   = f" {free_gb:.1f}G free"
+        suffix   = f" {free_gb:.1f}G · {pct}% free"
 
         total_w  = (_tw(prefix) + _tw(content) +
                     (_tw(spinner, ATTRS_SPINNER) - _tw(spinner) if spinner else 0) +
@@ -155,7 +155,7 @@ SEQUENCE = [
 if __name__ == "__main__":
     out_dir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "demo-v2.gif")
+    out_path = os.path.join(out_dir, "demo-v3.gif")
 
     print(f"Building {len(SEQUENCE)} frames with AppKit emoji rendering...")
     frames, delays = [], []
