@@ -31,14 +31,20 @@ MOODS = [
     (0,  "😱", "PANIC — swapping now"),
 ]
 
+# (name, approx 4-bit RAM needed in GB) — covers 8 GB → 192 GB Macs
 _MODEL_SIZES = [
-    ("32B", 20.0),
-    ("27B", 16.0),
-    ("13B",  8.0),
-    ("8B",   5.0),
-    ("7B",   4.5),
-    ("3B",   2.0),
-    ("1B",   0.8),
+    ("235B", 130.0),
+    ("90B",   52.0),
+    ("72B",   42.0),
+    ("70B",   40.0),
+    ("32B",   20.0),
+    ("27B",   16.0),
+    ("14B",    9.0),
+    ("13B",    8.0),
+    ("8B",     5.0),
+    ("7B",     4.5),
+    ("3B",     2.0),
+    ("1B",     0.8),
 ]
 
 _SPINNER      = "⣾⣽⣻⢿⡿⣟⣯⣷"
@@ -70,13 +76,6 @@ def _mac_free_pct():
         pass
     vm = psutil.virtual_memory()
     return int(vm.available / vm.total * 100)
-
-
-def _psutil_stats():
-    vm = psutil.virtual_memory()
-    used_gb = (vm.total - vm.available) / (1024 ** 3)
-    free_gb = vm.available / (1024 ** 3)
-    return used_gb, free_gb
 
 
 def _mp_free_gb(free_pct):
@@ -119,8 +118,15 @@ def _sparkline(history):
 
 
 def _fits_row(free_gb):
+    # Show models up to total RAM, plus the next 2 that won't fit (as context).
+    # This keeps the row useful on any Mac from 8 GB to 192 GB.
     parts = []
-    for name, needed in reversed(_MODEL_SIZES):
+    over = 0
+    for name, needed in reversed(_MODEL_SIZES):  # small → large
+        if needed > TOTAL_GB:
+            over += 1
+            if over > 2:
+                continue
         parts.append(("✓" if free_gb >= needed else "✗") + name)
     return "  ".join(parts)
 
@@ -172,26 +178,27 @@ class RamCatApp(rumps.App):
         self._spinner_idx = 0
         self._flash_count = 0
 
-        free_pct = _mac_free_pct()
-        used_gb, free_gb = _psutil_stats()
-        emoji, _ = _mood(free_pct)
+        free_pct  = _mac_free_pct()
+        mp_free_gb = _mp_free_gb(free_pct)
+        used_gb   = TOTAL_GB - mp_free_gb
+        emoji, _  = _mood(free_pct)
         self._history.append(free_pct)
 
         self._cur_emoji   = emoji
         self._cur_pct     = free_pct
+        self._cur_free_gb = mp_free_gb
         self._cur_loading = False
 
-        self.title = f"RAM {emoji} {free_pct}%"
+        self.title = f"RAM {emoji} {mp_free_gb:.1f}G · {free_pct}%"
 
         wired = _wired_gb()
         self._spark_item = _label(f"Trend:   {_sparkline(self._history)}")
-        self._free_item  = _label(f"Free:    {free_pct}%  ({free_gb:.1f} GB)")
+        self._free_item  = _label(f"Free:    {free_pct}%  ({mp_free_gb:.1f} / {TOTAL_GB:.0f} GB)")
         self._used_item  = _label(f"In use:  {used_gb:.1f} / {TOTAL_GB:.0f} GB")
         self._wired_item = _label(
             f"Wired:   {wired:.1f} GB  (model weights)" if wired else "Wired:   —"
         )
         self._swap_item  = _label("Swap:    none")
-        mp_free_gb = _mp_free_gb(free_pct)
         self._fits_item  = _label(
             f"4-bit:   {_fits_row(mp_free_gb)}   ({mp_free_gb:.1f} GB free)"
         )
@@ -215,9 +222,10 @@ class RamCatApp(rumps.App):
     @rumps.timer(3)
     def poll(self, _):
         """Slow poll — updates metrics and menu text."""
-        free_pct = _mac_free_pct()
-        used_gb, free_gb = _psutil_stats()
-        emoji, _ = _mood(free_pct)
+        free_pct   = _mac_free_pct()
+        mp_free_gb = _mp_free_gb(free_pct)
+        used_gb    = TOTAL_GB - mp_free_gb
+        emoji, _   = _mood(free_pct)
         self._history.append(free_pct)
 
         # Trigger flash when mood emoji changes
@@ -226,13 +234,14 @@ class RamCatApp(rumps.App):
 
         self._cur_emoji   = emoji
         self._cur_pct     = free_pct
+        self._cur_free_gb = mp_free_gb
         self._cur_loading = _climbing(self._history)
 
         swap = psutil.swap_memory()
         wired = _wired_gb()
 
         self._spark_item.title = f"Trend:   {_sparkline(self._history)}"
-        self._free_item.title  = f"Free:    {free_pct}%  ({free_gb:.1f} GB)"
+        self._free_item.title  = f"Free:    {free_pct}%  ({mp_free_gb:.1f} / {TOTAL_GB:.0f} GB)"
         self._used_item.title  = f"In use:  {used_gb:.1f} / {TOTAL_GB:.0f} GB"
         self._wired_item.title = (
             f"Wired:   {wired:.1f} GB  (model weights)" if wired else "Wired:   —"
@@ -241,7 +250,6 @@ class RamCatApp(rumps.App):
             f"Swap:    {swap.used / (1024**3):.1f} GB used"
             if swap.used > 0 else "Swap:    none"
         )
-        mp_free_gb = _mp_free_gb(free_pct)
         self._fits_item.title  = (
             f"4-bit:   {_fits_row(mp_free_gb)}   ({mp_free_gb:.1f} GB free)"
         )
@@ -256,20 +264,20 @@ class RamCatApp(rumps.App):
     @rumps.timer(0.15)
     def animate(self, _):
         """Fast tick — handles title bar flash and loading spinner."""
-        emoji = self._cur_emoji
-        pct   = self._cur_pct
+        emoji  = self._cur_emoji
+        free_g = self._cur_free_gb
 
+        pct = self._cur_pct
         if self._flash_count > 0:
-            # Blink: show emoji on even counts, blank on odd
             show = self._flash_count % 2 == 0
-            self.title = f"RAM {emoji} {pct}%" if show else f"RAM     {pct}%"
+            self.title = f"RAM {emoji} {free_g:.1f}G · {pct}%" if show else f"RAM     {free_g:.1f}G · {pct}%"
             self._flash_count -= 1
         elif self._cur_loading:
             frame = _SPINNER[self._spinner_idx % len(_SPINNER)]
-            self.title = f"RAM {emoji}{frame} {pct}%"
+            self.title = f"RAM {emoji}{frame} {free_g:.1f}G · {pct}%"
             self._spinner_idx += 1
         else:
-            self.title = f"RAM {emoji} {pct}%"
+            self.title = f"RAM {emoji} {free_g:.1f}G · {pct}%"
 
     def _quit(self, _):
         rumps.quit_application()

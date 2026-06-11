@@ -12,7 +12,9 @@ A macOS menubar companion for Apple Silicon that reacts to RAM pressure in real 
 
 Every time you run `mlx_lm.generate` on a 12B model you're playing RAM roulette. Will it fit? Will it swap? Will the system grind to a halt halfway through a response?
 
-RAM Cat watches `memory_pressure` (the honest macOS metric — not `psutil`, which overstates free RAM) and tells you exactly what's happening: a mood emoji that reacts to pressure, a loading spinner when RAM is actively filling, and a one-line answer to "can I load another model right now?"
+RAM Cat watches `memory_pressure` (the honest macOS metric — the same number Activity Monitor uses) and tells you exactly what's happening: a mood emoji that reacts to pressure, a loading spinner when RAM is actively filling, and a one-line answer to "can I load another model right now?"
+
+Why not `psutil`? On macOS, `psutil.virtual_memory().available` counts reclaimable disk cache as used, so it *understates* free RAM — by 2× on a busy machine (psutil: 3.4 GB free; `memory_pressure`: 7 GB). Every number RAM Cat shows comes from `memory_pressure`, so the title bar, the free row, and the model-fit row always agree.
 
 ---
 
@@ -20,13 +22,13 @@ RAM Cat watches `memory_pressure` (the honest macOS metric — not `psutil`, whi
 
 | Title bar | Meaning |
 |-----------|---------|
-| `RAM 😴 71%` | Idle — nothing loaded |
-| `RAM 😸 58%` | Comfortable — model running fine |
-| `RAM 😾 42%` | Alert — getting tight |
-| `RAM 🙀 22%` | Frazzled — swap imminent |
-| `RAM 😱 10%` | PANIC — you're swapping |
+| `RAM 😴 11.4G · 71%` | Idle — nothing loaded |
+| `RAM 😸 9.3G · 58%` | Comfortable — model running fine |
+| `RAM 😾 6.7G · 42%` | Alert — getting tight |
+| `RAM 🙀 3.5G · 22%` | Frazzled — swap imminent |
+| `RAM 😱 1.6G · 10%` | PANIC — you're swapping |
 
-When RAM is actively filling (model loading), a braille spinner appears: `RAM 😾⣾ 42%` → `RAM 😾⣽ 40%`. When the mood changes, the title blinks three times so you catch it even if you're not watching.
+The title shows **free** RAM — GB first (what you actually budget against), percentage second. When RAM is actively filling (model loading), a braille spinner appears: `RAM 😾⣾ 6.7G · 42%` → `RAM 😾⣽ 6.4G · 40%`. When the mood changes, the title blinks three times so you catch it even if you're not watching.
 
 ---
 
@@ -35,12 +37,12 @@ When RAM is actively filling (model loading), a braille spinner appears: `RAM �
 ```
 Trend:   ▁▁▂▄▅▆▇▇██
 ──────────────────────────────────
-Free:    38%  (6.1 GB)
+Free:    38%  (6.1 / 16 GB)
 In use:  9.9 / 16 GB
 Wired:   2.3 GB  (model weights)
 Swap:    none
 ──────────────────────────────────
-4-bit:   ✓1B  ✓3B  ✓7B  ✓8B  ✓13B  ✗27B  ✗32B   (6.1 GB free)
+4-bit:   ✓1B  ✓3B  ✓7B  ✓8B  ✗13B  ✗14B  ✗27B  ✗32B  ✗70B   (6.1 GB free)
 Running: mlx-community/gemma-4-it-4bit  [mlx_lm]
 ──────────────────────────────────
 Quit RAM Cat
@@ -69,18 +71,24 @@ Requires macOS (Apple Silicon recommended). Uses the `memory_pressure` CLI which
 
 ## Model fit reference (4-bit)
 
-| Model size | RAM needed | Fits on 16 GB? |
-|-----------|------------|---------------|
-| 1B        | ~0.8 GB    | ✓ always |
-| 3B        | ~2 GB      | ✓ always |
-| 7B        | ~4.5 GB    | ✓ usually |
-| 8B        | ~5 GB      | ✓ usually |
-| 13B       | ~8 GB      | ✓ with some headroom |
-| 27B       | ~16 GB     | ✗ tight even at idle |
-| 32B       | ~20 GB     | ✗ no |
-| 70B       | ~40 GB     | ✗ no |
+Works on any Mac — the fits row adapts to your machine's total RAM. It lists every model size up to your installed RAM, plus the next two above it (so you know what an upgrade would buy you).
 
-Numbers are approximate. RAM Cat uses live free memory to compute the table in real time — load a model and the ✓/✗ marks update accordingly.
+| Model size | RAM needed | Smallest Mac that runs it |
+|-----------|------------|---------------------------|
+| 1B        | ~0.8 GB    | any |
+| 3B        | ~2 GB      | any |
+| 7B        | ~4.5 GB    | 8 GB |
+| 8B        | ~5 GB      | 8 GB (tight) |
+| 13B       | ~8 GB      | 16 GB |
+| 14B       | ~9 GB      | 16 GB |
+| 27B       | ~16 GB     | 24 GB |
+| 32B       | ~20 GB     | 32 GB |
+| 70B       | ~40 GB     | 64 GB |
+| 72B       | ~42 GB     | 64 GB |
+| 90B       | ~52 GB     | 64 GB (tight) |
+| 235B      | ~130 GB    | 192 GB |
+
+Numbers are approximate (weights + a working KV cache at moderate context). RAM Cat uses live free memory to compute the ✓/✗ marks in real time — load a model and watch them flip.
 
 ---
 

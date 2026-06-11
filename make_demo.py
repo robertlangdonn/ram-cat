@@ -98,7 +98,8 @@ def render(mood, pct, spinner="", flash_off=False):
         emoji    = MOOD_EMOJI.get(mood, "😴")
         prefix   = "RAM "
         content  = f"{emoji}{spinner}"
-        suffix   = f" {pct}%"
+        free_gb  = pct / 100.0 * 16          # matches app title on a 16 GB Mac
+        suffix   = f" {free_gb:.1f}G · {pct}%"
 
         total_w  = (_tw(prefix) + _tw(content) +
                     (_tw(spinner, ATTRS_SPINNER) - _tw(spinner) if spinner else 0) +
