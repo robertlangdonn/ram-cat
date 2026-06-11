@@ -4,7 +4,7 @@
 
 A macOS menubar companion for Apple Silicon that reacts to RAM pressure in real time — built for people running LLMs locally.
 
-![RAM Cat demo](demo/demo.gif)
+![RAM Cat demo](demo/demo-v2.gif)
 
 ---
 
@@ -22,13 +22,13 @@ Why not `psutil`? On macOS, `psutil.virtual_memory().available` counts reclaimab
 
 | Title bar | Meaning |
 |-----------|---------|
-| `RAM 😴 11.4G · 71%` | Idle — nothing loaded |
-| `RAM 😸 9.3G · 58%` | Comfortable — model running fine |
-| `RAM 😾 6.7G · 42%` | Alert — getting tight |
-| `RAM 🙀 3.5G · 22%` | Frazzled — swap imminent |
-| `RAM 😱 1.6G · 10%` | PANIC — you're swapping |
+| `RAM 😴 11.4G free` | Idle — nothing loaded |
+| `RAM 😸 9.3G free` | Comfortable — model running fine |
+| `RAM 😾 6.7G free` | Alert — getting tight |
+| `RAM 🙀 3.5G free` | Frazzled — swap imminent |
+| `RAM 😱 1.6G free` | PANIC — you're swapping |
 
-The title shows **free** RAM — GB first (what you actually budget against), percentage second. When RAM is actively filling (model loading), a braille spinner appears: `RAM 😾⣾ 6.7G · 42%` → `RAM 😾⣽ 6.4G · 40%`. When the mood changes, the title blinks three times so you catch it even if you're not watching.
+The title shows **free** RAM in GB — the number you actually budget against ("does a 5 GB model fit in 6.7 free?"). The percentage and totals live in the dropdown. When RAM is actively filling (model loading), a braille spinner appears: `RAM 😾⣾ 6.7G free` → `RAM 😾⣽ 6.4G free`. When the mood changes, the title blinks three times so you catch it even if you're not watching.
 
 ---
 
