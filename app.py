@@ -79,6 +79,11 @@ def _psutil_stats():
     return used_gb, free_gb
 
 
+def _mp_free_gb(free_pct):
+    """Convert memory_pressure free% to GB — consistent source for fits row."""
+    return free_pct / 100.0 * TOTAL_GB
+
+
 def _wired_gb():
     try:
         out = subprocess.check_output(
@@ -186,8 +191,9 @@ class RamCatApp(rumps.App):
             f"Wired:   {wired:.1f} GB  (model weights)" if wired else "Wired:   —"
         )
         self._swap_item  = _label("Swap:    none")
+        mp_free_gb = _mp_free_gb(free_pct)
         self._fits_item  = _label(
-            f"4-bit:   {_fits_row(free_gb)}   ({free_gb:.1f} GB free)"
+            f"4-bit:   {_fits_row(mp_free_gb)}   ({mp_free_gb:.1f} GB free)"
         )
         self._model_item = _label("Idle")
         self._quit_item  = rumps.MenuItem("Quit RAM Cat", callback=self._quit)
@@ -235,8 +241,9 @@ class RamCatApp(rumps.App):
             f"Swap:    {swap.used / (1024**3):.1f} GB used"
             if swap.used > 0 else "Swap:    none"
         )
+        mp_free_gb = _mp_free_gb(free_pct)
         self._fits_item.title  = (
-            f"4-bit:   {_fits_row(free_gb)}   ({free_gb:.1f} GB free)"
+            f"4-bit:   {_fits_row(mp_free_gb)}   ({mp_free_gb:.1f} GB free)"
         )
 
         proc_label, model_name = _running_model()
